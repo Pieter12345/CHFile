@@ -2,14 +2,13 @@ package io.github.pieter12345.chfile.chfunctions;
 
 import com.laytonsmith.PureUtilities.Version;
 import com.laytonsmith.annotations.api;
-import com.laytonsmith.core.CHVersion;
+import com.laytonsmith.core.MSVersion;
 import com.laytonsmith.core.Security;
 import com.laytonsmith.core.Static;
 import com.laytonsmith.core.constructs.CArray;
 import com.laytonsmith.core.constructs.CBoolean;
 import com.laytonsmith.core.constructs.CString;
 import com.laytonsmith.core.constructs.CVoid;
-import com.laytonsmith.core.constructs.Construct;
 import com.laytonsmith.core.constructs.Target;
 import com.laytonsmith.core.environments.CommandHelperEnvironment;
 import com.laytonsmith.core.environments.Environment;
@@ -19,6 +18,7 @@ import com.laytonsmith.core.exceptions.CRE.CREFormatException;
 import com.laytonsmith.core.exceptions.CRE.CREIOException;
 import com.laytonsmith.core.exceptions.CRE.CRESecurityException;
 import com.laytonsmith.core.exceptions.CRE.CREThrowable;
+import com.laytonsmith.core.natives.interfaces.Mixed;
 
 import io.github.pieter12345.chfile.LifeCycle.FileFunction;
 
@@ -46,7 +46,7 @@ public class CHFileHandling {
 		}
 		
 		@Override
-		public Construct exec(Target t, Environment env, Construct... args) throws ConfigRuntimeException {
+		public Mixed exec(Target t, Environment env, Mixed... args) throws ConfigRuntimeException {
 			File location = Static.GetFileFromArgument(args[0].val(), env, t, null);
 			if(!InCmdLine(env)) {
 				// Verify that the file is above the base-dir directory (in CH settings).
@@ -82,7 +82,7 @@ public class CHFileHandling {
 		
 		@Override
 		public Version since() {
-			return CHVersion.V3_3_1;
+			return MSVersion.V3_3_1;
 		}
 	}
 	
@@ -95,7 +95,7 @@ public class CHFileHandling {
 		}
 		
 		@Override
-		public Construct exec(Target t, Environment env, Construct... args) throws ConfigRuntimeException {
+		public Mixed exec(Target t, Environment env, Mixed... args) throws ConfigRuntimeException {
 			File location = Static.GetFileFromArgument(args[0].val(), env, t, null);
 			if(!InCmdLine(env)) {
 				// Verify that the file is above the base-dir directory (in CH settings).
@@ -121,7 +121,7 @@ public class CHFileHandling {
 		
 		@Override
 		public Version since() {
-			return CHVersion.V3_3_1;
+			return MSVersion.V3_3_1;
 		}
 	}
 	
@@ -134,7 +134,7 @@ public class CHFileHandling {
 		}
 		
 		@Override
-		public Construct exec(Target t, Environment env, Construct... args) throws ConfigRuntimeException {
+		public Mixed exec(Target t, Environment env, Mixed... args) throws ConfigRuntimeException {
 			File location = Static.GetFileFromArgument(args[0].val(), env, t, null);
 			if(!InCmdLine(env)) {
 				// Verify that the file is above the base-dir directory (in CH settings).
@@ -160,7 +160,7 @@ public class CHFileHandling {
 		
 		@Override
 		public Version since() {
-			return CHVersion.V3_3_1;
+			return MSVersion.V3_3_1;
 		}
 	}
 	
@@ -173,7 +173,7 @@ public class CHFileHandling {
 		}
 		
 		@Override
-		public Construct exec(Target t, Environment env, Construct... args) throws ConfigRuntimeException {
+		public Mixed exec(Target t, Environment env, Mixed... args) throws ConfigRuntimeException {
 			File locationFrom = Static.GetFileFromArgument(args[0].val(), env, t, null);
 			File locationTo = Static.GetFileFromArgument(args[1].val(), env, t, null);
 			boolean overWrite = args.length == 3 && Static.getBoolean(args[2], t);
@@ -273,7 +273,7 @@ public class CHFileHandling {
 		
 		@Override
 		public Version since() {
-			return CHVersion.V3_3_1;
+			return MSVersion.V3_3_1;
 		}
 	}
 	
@@ -286,7 +286,7 @@ public class CHFileHandling {
 		}
 		
 		@Override
-		public Construct exec(Target t, Environment env, Construct... args) throws ConfigRuntimeException {
+		public Mixed exec(Target t, Environment env, Mixed... args) throws ConfigRuntimeException {
 			File location = Static.GetFileFromArgument(args[0].val(), env, t, null);
 			boolean allowRemoveFolderContent = args.length == 2 && Static.getBoolean(args[1], t);
 			
@@ -349,7 +349,7 @@ public class CHFileHandling {
 		
 		@Override
 		public Version since() {
-			return CHVersion.V3_3_1;
+			return MSVersion.V3_3_1;
 		}
 	}
 	
@@ -362,7 +362,7 @@ public class CHFileHandling {
 		}
 		
 		@Override
-		public Construct exec(Target t, Environment env, Construct... args) throws ConfigRuntimeException {
+		public Mixed exec(Target t, Environment env, Mixed... args) throws ConfigRuntimeException {
 			File location = Static.GetFileFromArgument(args[0].val(), env, t, null);
 			boolean createRequiredDirs = args.length == 2 && Static.getBoolean(args[1], t);
 			
@@ -417,7 +417,7 @@ public class CHFileHandling {
 		
 		@Override
 		public Version since() {
-			return CHVersion.V3_3_1;
+			return MSVersion.V3_3_1;
 		}
 	}
 	
@@ -430,7 +430,7 @@ public class CHFileHandling {
 		}
 		
 		@Override
-		public Construct exec(Target t, Environment env, Construct... args) throws ConfigRuntimeException {
+		public Mixed exec(Target t, Environment env, Mixed... args) throws ConfigRuntimeException {
 			File location = Static.GetFileFromArgument(args[0].val(), env, t, null);
 			boolean createRequiredDirs = args.length == 2 && Static.getBoolean(args[1], t);
 			
@@ -490,7 +490,7 @@ public class CHFileHandling {
 		
 		@Override
 		public Version since() {
-			return CHVersion.V3_3_1;
+			return MSVersion.V3_3_1;
 		}
 	}
 	
@@ -503,7 +503,7 @@ public class CHFileHandling {
 		}
 		
 		@Override
-		public Construct exec(Target t, Environment env, Construct... args) throws ConfigRuntimeException {
+		public Mixed exec(Target t, Environment env, Mixed... args) throws ConfigRuntimeException {
 			File location = Static.GetFileFromArgument(args[0].val(), env, t, null);
 			String content = args[1].val();
 			String writeOption = (args.length < 3 ? null : args[2].val());
@@ -554,7 +554,7 @@ public class CHFileHandling {
 		
 		@Override
 		public Version since() {
-			return CHVersion.V3_3_1;
+			return MSVersion.V3_3_1;
 		}
 	}
 	
@@ -567,7 +567,7 @@ public class CHFileHandling {
 		}
 		
 		@Override
-		public Construct exec(Target t, Environment env, Construct... args) throws ConfigRuntimeException {
+		public Mixed exec(Target t, Environment env, Mixed... args) throws ConfigRuntimeException {
 			File locationOld = Static.GetFileFromArgument(args[0].val(), env, t, null);
 			File locationNew = Static.GetFileFromArgument(args[1].val(), env, t, null);
 			boolean allowOverwrite = args.length == 3 && Static.getBoolean(args[2], t);
@@ -620,7 +620,7 @@ public class CHFileHandling {
 		
 		@Override
 		public Version since() {
-			return CHVersion.V3_3_1;
+			return MSVersion.V3_3_1;
 		}
 	}
 	
@@ -633,7 +633,7 @@ public class CHFileHandling {
 		}
 		
 		@Override
-		public Construct exec(Target t, Environment env, Construct... args) throws ConfigRuntimeException {
+		public Mixed exec(Target t, Environment env, Mixed... args) throws ConfigRuntimeException {
 			File locationOld = Static.GetFileFromArgument(args[0].val(), env, t, null);
 			File locationNew = Static.GetFileFromArgument(args[1].val(), env, t, null);
 			boolean allowOverwrite = args.length == 3 && Static.getBoolean(args[2], t);
@@ -707,7 +707,7 @@ public class CHFileHandling {
 		
 		@Override
 		public Version since() {
-			return CHVersion.V3_3_1;
+			return MSVersion.V3_3_1;
 		}
 	}
 	

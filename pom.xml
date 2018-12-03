@@ -4,7 +4,7 @@
 	
 	<groupId>io.github.pieter12345</groupId>
 	<artifactId>CHFile</artifactId>
-	<version>0.0.4-SNAPSHOT</version>
+	<version>0.0.5-SNAPSHOT</version>
 	<packaging>jar</packaging>
 	
 	<name>CHFile</name>
@@ -127,7 +127,7 @@
 		<dependency>
 			<groupId>com.sk89q</groupId>
 			<artifactId>commandhelper</artifactId>
-			<version>3.3.2-SNAPSHOT</version>
+			<version>3.3.4-SNAPSHOT</version>
 			<type>jar</type>
 		</dependency>
 		

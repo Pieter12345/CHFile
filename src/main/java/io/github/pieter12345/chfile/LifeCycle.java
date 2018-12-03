@@ -27,7 +27,7 @@ public class LifeCycle extends AbstractExtension {
 	
 	@Override
 	public Version getVersion() {
-		return new SimpleVersion(0, 0, 4);
+		return new SimpleVersion(0, 0, 5);
 	}
 	
 	public static abstract class FileFunction extends AbstractFunction {
