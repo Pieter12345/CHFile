@@ -2,6 +2,7 @@ package io.github.pieter12345.chfile.chfunctions;
 
 import com.laytonsmith.PureUtilities.Version;
 import com.laytonsmith.annotations.api;
+import com.laytonsmith.core.ArgumentValidation;
 import com.laytonsmith.core.MSVersion;
 import com.laytonsmith.core.Security;
 import com.laytonsmith.core.Static;
@@ -12,7 +13,6 @@ import com.laytonsmith.core.constructs.CVoid;
 import com.laytonsmith.core.constructs.Target;
 import com.laytonsmith.core.environments.CommandHelperEnvironment;
 import com.laytonsmith.core.environments.Environment;
-import com.laytonsmith.core.environments.GlobalEnv;
 import com.laytonsmith.core.exceptions.ConfigRuntimeException;
 import com.laytonsmith.core.exceptions.CRE.CREFormatException;
 import com.laytonsmith.core.exceptions.CRE.CREIOException;
@@ -48,12 +48,7 @@ public class CHFileHandling {
 		@Override
 		public Mixed exec(Target t, Environment env, Mixed... args) throws ConfigRuntimeException {
 			File location = Static.GetFileFromArgument(args[0].val(), env, t, null);
-			if(!InCmdLine(env)) {
-				// Verify that the file is above the base-dir directory (in CH settings).
-				if(!Security.CheckSecurity(location)) {
-					throw new CRESecurityException("You do not have permission to access the directory '" + location + "'", t);
-				}
-			}
+			checkSecurity(location, env, t);
 			if(!location.exists()) {
 				throw new CREIOException("The location does not exist: " + location.getAbsolutePath() + ".", t);
 			}
@@ -97,12 +92,7 @@ public class CHFileHandling {
 		@Override
 		public Mixed exec(Target t, Environment env, Mixed... args) throws ConfigRuntimeException {
 			File location = Static.GetFileFromArgument(args[0].val(), env, t, null);
-			if(!InCmdLine(env)) {
-				// Verify that the file is above the base-dir directory (in CH settings).
-				if(!Security.CheckSecurity(location)) {
-					throw new CRESecurityException("You do not have permission to access the file '" + location + "'", t);
-				}
-			}
+			checkSecurity(location, env, t);
 			return CBoolean.GenerateCBoolean(location.exists(), t);
 		}
 		
@@ -116,7 +106,7 @@ public class CHFileHandling {
 		@Override
 		@SuppressWarnings("unchecked")
 		public Class<? extends CREThrowable>[] thrown() {
-			return new Class[] {CRESecurityException.class};
+			return new Class[] {CRESecurityException.class, CREIOException.class};
 		}
 		
 		@Override
@@ -136,12 +126,7 @@ public class CHFileHandling {
 		@Override
 		public Mixed exec(Target t, Environment env, Mixed... args) throws ConfigRuntimeException {
 			File location = Static.GetFileFromArgument(args[0].val(), env, t, null);
-			if(!InCmdLine(env)) {
-				// Verify that the file is above the base-dir directory (in CH settings).
-				if(!Security.CheckSecurity(location)) {
-					throw new CRESecurityException("You do not have permission to access the file '" + location + "'", t);
-				}
-			}
+			checkSecurity(location, env, t);
 			return CBoolean.GenerateCBoolean(location.isDirectory(), t);
 		}
 		
@@ -155,7 +140,7 @@ public class CHFileHandling {
 		@Override
 		@SuppressWarnings("unchecked")
 		public Class<? extends CREThrowable>[] thrown() {
-			return new Class[] {CRESecurityException.class};
+			return new Class[] {CRESecurityException.class, CREIOException.class};
 		}
 		
 		@Override
@@ -176,17 +161,10 @@ public class CHFileHandling {
 		public Mixed exec(Target t, Environment env, Mixed... args) throws ConfigRuntimeException {
 			File locationFrom = Static.GetFileFromArgument(args[0].val(), env, t, null);
 			File locationTo = Static.GetFileFromArgument(args[1].val(), env, t, null);
-			boolean overWrite = args.length == 3 && Static.getBoolean(args[2], t);
-			boolean createTargetDirs = args.length == 4 && Static.getBoolean(args[3], t);
-			
-			if(!InCmdLine(env)) {
-				// Verify that the file is above the base-dir directory (in CH settings).
-				for(File location : new File[] {locationFrom, locationTo}) {
-					if(!Security.CheckSecurity(location)) {
-						throw new CRESecurityException("You do not have permission to access the file '" + location + "'", t);
-					}
-				}
-			}
+			boolean overWrite = args.length == 3 && ArgumentValidation.getBooleanish(args[2], t);
+			boolean createTargetDirs = args.length == 4 && ArgumentValidation.getBooleanish(args[3], t);
+			checkSecurity(locationFrom, env, t);
+			checkSecurity(locationTo, env, t);
 			
 // Handled in copyFile().
 //			// Check if there already is a file at locationTo (prevent overwriting when it's not desired).
@@ -288,14 +266,8 @@ public class CHFileHandling {
 		@Override
 		public Mixed exec(Target t, Environment env, Mixed... args) throws ConfigRuntimeException {
 			File location = Static.GetFileFromArgument(args[0].val(), env, t, null);
-			boolean allowRemoveFolderContent = args.length == 2 && Static.getBoolean(args[1], t);
-			
-			if(!InCmdLine(env)) {
-				// Verify that the file is above the base-dir directory (in CH settings).
-				if(!Security.CheckSecurity(location)) {
-					throw new CRESecurityException("You do not have permission to access the file '" + location + "'", t);
-				}
-			}
+			boolean allowRemoveFolderContent = args.length == 2 && ArgumentValidation.getBooleanish(args[1], t);
+			checkSecurity(location, env, t);
 			
 			// Check if the file/directory at the location exists.
 			if(!location.exists()) {
@@ -364,14 +336,8 @@ public class CHFileHandling {
 		@Override
 		public Mixed exec(Target t, Environment env, Mixed... args) throws ConfigRuntimeException {
 			File location = Static.GetFileFromArgument(args[0].val(), env, t, null);
-			boolean createRequiredDirs = args.length == 2 && Static.getBoolean(args[1], t);
-			
-			if(!InCmdLine(env)) {
-				// Verify that the file is above the base-dir directory (in CH settings).
-				if(!Security.CheckSecurity(location)) {
-					throw new CRESecurityException("You do not have permission to create a file at '" + location + "'", t);
-				}
-			}
+			boolean createRequiredDirs = args.length == 2 && ArgumentValidation.getBooleanish(args[1], t);
+			checkSecurity(location, env, t);
 			
 			// Check if the file/directory at the location exists.
 			if(location.exists()) {
@@ -432,14 +398,8 @@ public class CHFileHandling {
 		@Override
 		public Mixed exec(Target t, Environment env, Mixed... args) throws ConfigRuntimeException {
 			File location = Static.GetFileFromArgument(args[0].val(), env, t, null);
-			boolean createRequiredDirs = args.length == 2 && Static.getBoolean(args[1], t);
-			
-			if(!InCmdLine(env)) {
-				// Verify that the file is above the base-dir directory (in CH settings).
-				if(!Security.CheckSecurity(location)) {
-					throw new CRESecurityException("You do not have permission to create a file at '" + location + "'", t);
-				}
-			}
+			boolean createRequiredDirs = args.length == 2 && ArgumentValidation.getBooleanish(args[1], t);
+			checkSecurity(location, env, t);
 			
 			// Return if a directory at the location already exists. Throw an exception if it's a file.
 			if(location.exists()) {
@@ -507,12 +467,7 @@ public class CHFileHandling {
 			File location = Static.GetFileFromArgument(args[0].val(), env, t, null);
 			String content = args[1].val();
 			String writeOption = (args.length < 3 ? null : args[2].val());
-			if(!InCmdLine(env)) {
-				// Verify that the file is above the base-dir directory (in CH settings).
-				if(!Security.CheckSecurity(location)) {
-					throw new CRESecurityException("You do not have permission to access the file '" + location + "'", t);
-				}
-			}
+			checkSecurity(location, env, t);
 			OpenOption[] options;
 			if(writeOption == null) {
 				if(location.exists()) {
@@ -570,15 +525,9 @@ public class CHFileHandling {
 		public Mixed exec(Target t, Environment env, Mixed... args) throws ConfigRuntimeException {
 			File locationOld = Static.GetFileFromArgument(args[0].val(), env, t, null);
 			File locationNew = Static.GetFileFromArgument(args[1].val(), env, t, null);
-			boolean allowOverwrite = args.length == 3 && Static.getBoolean(args[2], t);
-			if(!InCmdLine(env)) {
-				// Verify that the file is above the base-dir directory (in CH settings).
-				for(File location : new File[] {locationOld, locationNew}) {
-					if(!Security.CheckSecurity(location)) {
-						throw new CRESecurityException("You do not have permission to access the file '" + location + "'", t);
-					}
-				}
-			}
+			boolean allowOverwrite = args.length == 3 && ArgumentValidation.getBooleanish(args[2], t);
+			checkSecurity(locationOld, env, t);
+			checkSecurity(locationNew, env, t);
 			
 			// Check if the parent directory is the same (it should be as this is a rename only).
 			if(!locationOld.getParentFile().getAbsolutePath().equals(locationNew.getParentFile().getAbsolutePath())) {
@@ -636,15 +585,9 @@ public class CHFileHandling {
 		public Mixed exec(Target t, Environment env, Mixed... args) throws ConfigRuntimeException {
 			File locationOld = Static.GetFileFromArgument(args[0].val(), env, t, null);
 			File locationNew = Static.GetFileFromArgument(args[1].val(), env, t, null);
-			boolean allowOverwrite = args.length == 3 && Static.getBoolean(args[2], t);
-			if(!InCmdLine(env)) {
-				// Verify that the file is above the base-dir directory (in CH settings).
-				for(File location : new File[] {locationOld, locationNew}) {
-					if(!Security.CheckSecurity(location)) {
-						throw new CRESecurityException("You do not have permission to access the file '" + location + "'", t);
-					}
-				}
-			}
+			boolean allowOverwrite = args.length == 3 && ArgumentValidation.getBooleanish(args[2], t);
+			checkSecurity(locationOld, env, t);
+			checkSecurity(locationNew, env, t);
 			
 			// Check if the locations are the same (Just return if the move doesn't do anything).
 			if(locationOld.getAbsolutePath().equals(locationNew.getAbsolutePath())) {
@@ -712,13 +655,21 @@ public class CHFileHandling {
 	}
 	
 	/**
-	 * Returns true if currently running in cmdline mode.
-	 *
-	 * @param environment
-	 * @return
+	 * Checks whether the given file may be accessed according to the security manager. In cmdline mode, this is always
+	 * allowed.
+	 * @param file - The file to check.
+	 * @param env - The environment.
+	 * @param t - The target.
+	 * @throws CRESecurityException - If the security manager disallows usage of the file, given the environment.
+	 * @throws CREIOException - If an I/O error occurs while resolving the canonical file path.
 	 */
-	public static boolean InCmdLine(Environment environment) {
-		return environment.getEnv(GlobalEnv.class).GetCustom("cmdline") instanceof Boolean
-				&& (Boolean) environment.getEnv(GlobalEnv.class).GetCustom("cmdline");
+	public static void checkSecurity(File file, Environment env, Target t) throws CRESecurityException, CREIOException {
+		try {
+			if(!Static.InCmdLine(env, false) && !Security.CheckSecurity(file)) {
+				throw new CRESecurityException("You do not have permission to access file: '" + file.getAbsolutePath() + "'", t);
+			}
+		} catch (IOException e) {
+			throw new CREIOException(e.getMessage(), t);
+		}
 	}
 }
