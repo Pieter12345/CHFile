@@ -115,8 +115,8 @@
 		
 		<!-- CommandHelper repository -->
 		<repository>
-			<id>sk89q-mvn2</id>
-			<url>http://mvn2.sk89q.com/repo</url>
+			<id>sk89q-maven</id>
+			<url>http://maven.sk89q.com/repo</url>
 		</repository>
 		
 	</repositories>
