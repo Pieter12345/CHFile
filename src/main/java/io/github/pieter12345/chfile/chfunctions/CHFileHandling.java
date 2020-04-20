@@ -11,7 +11,6 @@ import com.laytonsmith.core.constructs.CBoolean;
 import com.laytonsmith.core.constructs.CString;
 import com.laytonsmith.core.constructs.CVoid;
 import com.laytonsmith.core.constructs.Target;
-import com.laytonsmith.core.environments.CommandHelperEnvironment;
 import com.laytonsmith.core.environments.Environment;
 import com.laytonsmith.core.exceptions.ConfigRuntimeException;
 import com.laytonsmith.core.exceptions.CRE.CREFormatException;
@@ -37,7 +36,7 @@ import java.nio.file.StandardOpenOption;
  */
 public class CHFileHandling {
 	
-	@api(environments = {CommandHelperEnvironment.class})
+	@api
 	public static class chf_directory_list extends FileFunction {
 		
 		@Override
@@ -81,7 +80,7 @@ public class CHFileHandling {
 		}
 	}
 	
-	@api(environments = {CommandHelperEnvironment.class})
+	@api
 	public static class chf_file_exists extends FileFunction {
 		
 		@Override
@@ -115,7 +114,7 @@ public class CHFileHandling {
 		}
 	}
 	
-	@api(environments = {CommandHelperEnvironment.class})
+	@api
 	public static class chf_is_directory extends FileFunction {
 		
 		@Override
@@ -149,7 +148,7 @@ public class CHFileHandling {
 		}
 	}
 	
-	@api(environments = {CommandHelperEnvironment.class})
+	@api
 	public static class chf_copy extends FileFunction {
 		
 		@Override
@@ -255,7 +254,7 @@ public class CHFileHandling {
 		}
 	}
 	
-	@api(environments = {CommandHelperEnvironment.class})
+	@api
 	public static class chf_delete extends FileFunction {
 		
 		@Override
@@ -325,7 +324,7 @@ public class CHFileHandling {
 		}
 	}
 	
-	@api(environments = {CommandHelperEnvironment.class})
+	@api
 	public static class chf_create_file extends FileFunction {
 		
 		@Override
@@ -387,7 +386,7 @@ public class CHFileHandling {
 		}
 	}
 	
-	@api(environments = {CommandHelperEnvironment.class})
+	@api
 	public static class chf_create_directory extends FileFunction {
 		
 		@Override
@@ -454,7 +453,7 @@ public class CHFileHandling {
 		}
 	}
 	
-	@api(environments = {CommandHelperEnvironment.class})
+	@api
 	public static class chf_write extends FileFunction {
 		
 		@Override
@@ -513,7 +512,7 @@ public class CHFileHandling {
 		}
 	}
 	
-	@api(environments = {CommandHelperEnvironment.class})
+	@api
 	public static class chf_rename extends FileFunction {
 		
 		@Override
@@ -573,7 +572,7 @@ public class CHFileHandling {
 		}
 	}
 	
-	@api(environments = {CommandHelperEnvironment.class})
+	@api
 	public static class chf_move extends FileFunction {
 		
 		@Override
