@@ -160,7 +160,7 @@ public class CHFileHandling {
 		public Mixed exec(Target t, Environment env, Mixed... args) throws ConfigRuntimeException {
 			File locationFrom = Static.GetFileFromArgument(args[0].val(), env, t, null);
 			File locationTo = Static.GetFileFromArgument(args[1].val(), env, t, null);
-			boolean overWrite = args.length == 3 && ArgumentValidation.getBooleanish(args[2], t);
+			boolean overWrite = args.length >= 3 && ArgumentValidation.getBooleanish(args[2], t);
 			boolean createTargetDirs = args.length == 4 && ArgumentValidation.getBooleanish(args[3], t);
 			checkSecurity(locationFrom, env, t);
 			checkSecurity(locationTo, env, t);
