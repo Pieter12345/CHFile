@@ -85,11 +85,9 @@
 					<execution>
 						<id>cache-annotations</id>
 						<phase>process-classes</phase>
-<!-- Eclipse maven can't handle this.
 						<goals>
 							<goal>java</goal>
 						</goals>
--->
 					</execution>
 				</executions>
 		
