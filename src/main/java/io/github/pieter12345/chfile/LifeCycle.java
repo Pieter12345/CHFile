@@ -16,16 +16,6 @@ import com.laytonsmith.core.functions.AbstractFunction;
 public class LifeCycle extends AbstractExtension {
 	
 	@Override
-	public void onStartup() {
-		System.out.println("CHFile " + this.getVersion() + " loaded.");
-	}
-	
-	@Override
-	public void onShutdown() {
-		System.out.println("CHFile " + this.getVersion() + " unloaded.");
-	}
-	
-	@Override
 	public Version getVersion() {
 		return new SimpleVersion(0, 0, 5);
 	}
