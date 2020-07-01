@@ -23,7 +23,6 @@ import io.github.pieter12345.chfile.LifeCycle.FileFunction;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.CopyOption;
 import java.nio.file.Files;
 import java.nio.file.OpenOption;
 import java.nio.file.StandardCopyOption;
@@ -49,10 +48,11 @@ public class CHFileHandling {
 			File location = Static.GetFileFromArgument(args[0].val(), env, t, null);
 			checkSecurity(location, env, t);
 			if(!location.exists()) {
-				throw new CREIOException("The location does not exist: " + location.getAbsolutePath() + ".", t);
+				throw new CREIOException(
+						"Directory at location does not exist: " + location.getAbsolutePath() + ".", t);
 			}
 			if(!location.isDirectory()) {
-				throw new CREIOException("The location is not a directory: " + location.getAbsolutePath() + ".", t);
+				throw new CREIOException("File at location is not a directory: " + location.getAbsolutePath() + ".", t);
 			}
 			CArray ret = new CArray(t);
 			for(String content : location.list()) {
@@ -63,9 +63,10 @@ public class CHFileHandling {
 		
 		@Override
 		public String docs() {
-			return "array {directory} Lists all files and directories in the given directory and returns them in an array. The path is relative to"
-				+ " the file that is being run, not CommandHelper."
-				+ " If the file specified is not within base-dir (as specified in the preferences file), a SecurityException is thrown.";
+			return "array {directory} Returns an array containing all files and directories in the given directory."
+					+ " The path is relative to the file that is being run, not CommandHelper."
+					+ " If the file specified is not within base-dir (as specified in the preferences file),"
+					+ " a SecurityException is thrown.";
 		}
 		
 		@Override
@@ -97,9 +98,10 @@ public class CHFileHandling {
 		
 		@Override
 		public String docs() {
-			return "boolean {filename} Returns whether the given file or directory exists. The path is relative to"
-				+ " the file that is being run, not CommandHelper."
-				+ " If the file specified is not within base-dir (as specified in the preferences file), a SecurityException is thrown.";
+			return "boolean {path} Returns whether the file or directory at the given path exists."
+					+ " The path is relative to the file that is being run, not CommandHelper."
+					+ " If the file specified is not within base-dir (as specified in the preferences file),"
+					+ " a SecurityException is thrown.";
 		}
 		
 		@Override
@@ -131,9 +133,10 @@ public class CHFileHandling {
 		
 		@Override
 		public String docs() {
-			return "boolean {filename} Returns whether the given file is a directory. The path is relative to"
-				+ " the file that is being run, not CommandHelper."
-				+ " If the file specified is not within base-dir (as specified in the preferences file), a SecurityException is thrown.";
+			return "boolean {path} Returns whether the file at the given path is a directory."
+					+ " The path is relative to the file that is being run, not CommandHelper."
+					+ " If the file specified is not within base-dir (as specified in the preferences file),"
+					+ " a SecurityException is thrown.";
 		}
 		
 		@Override
@@ -160,86 +163,125 @@ public class CHFileHandling {
 		public Mixed exec(Target t, Environment env, Mixed... args) throws ConfigRuntimeException {
 			File locationFrom = Static.GetFileFromArgument(args[0].val(), env, t, null);
 			File locationTo = Static.GetFileFromArgument(args[1].val(), env, t, null);
-			boolean overWrite = args.length >= 3 && ArgumentValidation.getBooleanish(args[2], t);
-			boolean createTargetDirs = args.length == 4 && ArgumentValidation.getBooleanish(args[3], t);
+			boolean overWrite = args.length >= 3 && ArgumentValidation.getBooleanObject(args[2], t);
+			boolean createTargetDirs = args.length == 4 && ArgumentValidation.getBooleanObject(args[3], t);
 			checkSecurity(locationFrom, env, t);
 			checkSecurity(locationTo, env, t);
 			
-// Handled in copyFile().
-//			// Check if there already is a file at locationTo (prevent overwriting when it's not desired).
-//			if(!overWrite && locationTo.exists() && locationTo.isFile()) {
-//				throw new CRE("Trying to copy to an existing file without overwrite enabled: '" + locationTo.getAbsolutePath() + "'",
-//					Exceptions.ExceptionType.SecurityException, t);
-//			}
+			// Disallow copying a file/directory to itself.
+			if(locationFrom.getAbsolutePath().equals(locationTo.getAbsolutePath())) {
+				throw new CREIOException(
+						"Cannot copy file or directory to itself: '" + locationFrom.getAbsolutePath() + "'", t);
+			}
 			
 			// Check if the file/directory at locationFrom exists.
 			if(!locationFrom.exists()) {
-				throw new CREIOException("The given file or directory does not exist: '" + locationFrom.getAbsolutePath() + "'", t);
+				throw new CREIOException(
+						"File or directory at 'fromPath' does not exist: '" + locationFrom.getAbsolutePath() + "'", t);
 			}
 			
 			// Check if the file/directory at locationTo exists if the locationFrom is a directory.
-			if(locationFrom.isDirectory() && !locationTo.exists()) {
-				if(createTargetDirs) {
-					if(!locationTo.mkdirs()) {
-						throw new CREIOException("Could not create folder to copy to: '" + locationTo.getAbsolutePath() + "'", t);
-					}
-				} else {
-					throw new CREIOException("Could not copy because the target directory does not exist: '" + locationTo.getAbsolutePath() + "'", t);
+			File locationToParent = locationTo.getParentFile();
+			if(locationToParent != null && !locationToParent.exists()) {
+				if(!createTargetDirs) {
+					throw new CREIOException(
+							"Target directory does not exist: '" + locationToParent.getAbsolutePath() + "'", t);
+				}
+				if(!locationToParent.mkdirs()) {
+					throw new CREIOException(
+							"Could not create directory: '" + locationToParent.getAbsolutePath() + "'", t);
 				}
 			}
 			
-			// Check if the locationFrom is the same as the locationTo (For files only, directories can be put in there).
-			if(locationFrom.isFile() && locationFrom.getAbsolutePath().equals(locationTo.getAbsolutePath())) {
-				throw new CREIOException("Trying to copy from a file to the same file at: '" + locationFrom.getAbsolutePath() + "'", t);
-			}
-			
 			// Perform the copy.
-			try {
-				copyFile(locationFrom, locationTo, overWrite, t);
-			} catch(IOException  e) {
-				throw new CREIOException("Could not copy (some) files from: '" + locationFrom.getAbsolutePath() + "' to: '" + locationTo.getAbsolutePath() + "'", t);
+			if(locationFrom.isFile()) {
+				try {
+					copyFile(locationFrom, locationTo, overWrite, t);
+				} catch (IOException e) {
+					throw new CREIOException("Could not copy file from: '" + locationFrom.getAbsolutePath()
+							+ "' to: '" + locationTo.getAbsolutePath() + "'. Message: " + e.getMessage(), t);
+				}
+			} else {
+				try {
+					if(!locationTo.exists() && !locationTo.mkdir()) {
+						throw new CREIOException(
+								"Could not create directory: '" + locationToParent.getAbsolutePath() + "'", t);
+					}
+					for(File fromFile : locationFrom.listFiles()) {
+						File toFile = new File(locationTo, fromFile.getName());
+						copyFile(fromFile, toFile, overWrite, t);
+					}
+				} catch (IOException e) {
+					throw new CREIOException("Could not copy (some) file(s) from: '" + locationFrom.getAbsolutePath()
+							+ "' to: '" + locationTo.getAbsolutePath() + "'. Message: " + e.getMessage(), t);
+				}
 			}
 			
 			return CVoid.VOID;
 		}
 		
-		// copyFile method.
-		// Copies the "from" file to the "to" file, overwriting any existing files. Folders are merged is they already exist.
-		private static void copyFile(File from, File to, boolean overWrite, Target t) throws IOException, ConfigRuntimeException {
+		/**
+		 * Copies the 'from' file or directory to the 'to' path, overwriting any existing files.
+		 * The name for the file or directory copy should be provided in the 'to' path.
+		 * Directories are merged if they already exist.
+		 * @param from - The from file or directory.
+		 * @param to - The to file or directory.
+		 * @param overWrite - If {@code true}, already existing files will be overwritten.
+		 * @param t - The target.
+		 * @throws IOException When an I/O error occurs when copying a file or directory.
+		 * @throws CRESecurityException When the security manager disallows (a part of) the copy action.
+		 */
+		private static void copyFile(File from, File to, boolean overWrite, Target t)
+				throws IOException, CRESecurityException {
 			if(from.isFile()) {
 				
-				// Check if there already is a file at locationTo (prevent overwriting when it's not desired).
-				if(!overWrite && to.exists()) {
-					throw new CRESecurityException("Trying to copy to an existing file without overwrite enabled: '" + to.getAbsolutePath() + "'", t);
+				// Prevent file overwriting if it's not allowed.
+				if(!overWrite && to.isFile()) {
+					throw new CRESecurityException("Cannot overwrite existing file (overwrite parameter is false): '"
+							+ to.getAbsolutePath() + "'", t);
 				}
 				
 				Files.copy(from.toPath(), to.toPath(), StandardCopyOption.REPLACE_EXISTING);
 			} else if(from.isDirectory()) {
-				File toFolder = new File(to.getAbsoluteFile() + "/" + from.getName());
-				toFolder.mkdir();
+				
+				// Create the 'to' directory.
+				if(!to.isDirectory() && !to.mkdir()) {
+					throw new IOException("Could not create directory: '" + to.getAbsolutePath() + "'.");
+				}
+				
+				// Copy the directory contents.
 				for(File subFrom : from.listFiles()) {
-					File subTo = new File(toFolder.getAbsolutePath() + "/" + subFrom.getName());
+					File subTo = new File(to.getAbsoluteFile(), subFrom.getName());
 					
-					// Check if there already is a file at locationTo (prevent overwriting when it's not desired).
-					if(!overWrite && subTo.exists()) {
-						throw new CRESecurityException("Trying to copy to an existing file without overwrite enabled: '" + subTo.getAbsolutePath() + "'", t);
+					// Prevent file overwriting if it's not allowed.
+					if(!overWrite && subTo.isFile()) {
+						throw new CRESecurityException("Cannot overwrite existing file"
+								+ " (overwrite parameter is false): '" + subTo.getAbsolutePath() + "'", t);
 					}
-					if(subFrom.isFile()) {
-						copyFile(subFrom, subTo, overWrite, t);
-					} else if(subFrom.isDirectory()) {
-						copyFile(subFrom, toFolder, overWrite, t);
-					}
+					copyFile(subFrom, subTo, overWrite, t);
 				}
 			}
 		}
 		
 		@Override
 		public String docs() {
-			return "void {fromFilePath, toFilePath, [allowOverwrite], [createRequiredDirs]} Copies the file (or directory) from the fromFilePath to the toFilePath."
-				+ " The paths are relative to the file that is being run, not CommandHelper."
-				+ " Throws a SecurityException if allowOverwrite is false and the file at toFilename already exists and is not a directory. Directories are merged."
-				+ " Throws an IOException if createRequiredDirs is false and the directory at toFilename does not exist."
-				+ " If the file specified is not within base-dir (as specified in the preferences file), a SecurityException is thrown.";
+			return "void {fromPath, toPath, [allowOverwrite], [createRequiredDirs]}"
+					+ " Copies the file or directory (including contents) from the fromPath to the toPath."
+					+ " When copying a directory which's target already exists,"
+					+ " it will be merged with the existing directory. This also holds for subdirectories."
+					+ " toPath should contain the file or directory name of the copy,"
+					+ " and not just the directory in which to place the copy."
+					+ " If allowOverwrite is true, files will overwrite the file at their target location if they"
+					+ " already exist. Defaults to false."
+					+ " If createRequiredDirs is true, the parent directory of toPath will be created if it does not"
+					+ " yet exist. Defaults to false."
+					+ " The paths are relative to the file that is being run, not CommandHelper."
+					+ " Throws a SecurityException if allowOverwrite is false and the file at toPath already exists"
+					+ " and is not a directory."
+					+ " Throws an IOException if createRequiredDirs is false and the parent directory of toPath does"
+					+ " not exist."
+					+ " If the file specified is not within base-dir (as specified in the preferences file),"
+					+ " a SecurityException is thrown.";
 		}
 		
 		@Override
@@ -265,7 +307,7 @@ public class CHFileHandling {
 		@Override
 		public Mixed exec(Target t, Environment env, Mixed... args) throws ConfigRuntimeException {
 			File location = Static.GetFileFromArgument(args[0].val(), env, t, null);
-			boolean allowRemoveFolderContent = args.length == 2 && ArgumentValidation.getBooleanish(args[1], t);
+			boolean allowRemoveDirContent = args.length == 2 && ArgumentValidation.getBooleanObject(args[1], t);
 			checkSecurity(location, env, t);
 			
 			// Check if the file/directory at the location exists.
@@ -274,20 +316,25 @@ public class CHFileHandling {
 			}
 			
 			// Check if the file is a non-empty directory and allowRemoveFolderContent is false.
-			if(!allowRemoveFolderContent && location.isDirectory() && location.listFiles().length != 0) {
-				throw new CRESecurityException("The given file is a non-empty directory and allowRemoveFolderContent is not enabled: '" + location.getAbsolutePath() + "'", t);
+			if(!allowRemoveDirContent && location.isDirectory() && location.listFiles().length != 0) {
+				throw new CRESecurityException("The given file is a non-empty directory and allowRemoveFolderContent"
+						+ " is not enabled: '" + location.getAbsolutePath() + "'", t);
 			}
 			
 			// Perform the deletion.
 			if(!deleteFile(location)) {
-				throw new CREIOException("Could not delete (some) file(s) from: '" + location.getAbsolutePath() + "'", t);
+				throw new CREIOException(
+						"Could not delete (some) file(s) from: '" + location.getAbsolutePath() + "'", t);
 			}
 			
 			return CVoid.VOID;
 		}
 		
-		// deleteFile method.
-		// Deletes the given file or folder from the disk.
+		/**
+		 * Deletes the given file or directory.
+		 * @param file - The file to delete.
+		 * @return {@code true} on success, {@code false} when at least one file could not be deleted.
+		 */
 		private static boolean deleteFile(File file) {
 			if(file.isFile()) {
 				return file.delete();
@@ -305,11 +352,15 @@ public class CHFileHandling {
 		
 		@Override
 		public String docs() {
-			return "void {filename, [allowRemoveFolderContent]} Deletes the file (or directory) at the given path."
+			return "void {path, [allowRemoveDirContent]} Deletes the file or directory at the given path."
 				+ " The path is relative to the file that is being run, not CommandHelper."
-				+ " Throws a SecurityException If allowRemoveFolderContent is false and the given file is a non-empty directory."
+				+ " If allowRemoveDirContent is true, directory contents will be removed if a non-empty directory is"
+				+ " given. Defaults to false."
+				+ " Throws a SecurityException If allowRemoveDirContent is false and the given file is a"
+				+ " non-empty directory."
 				+ " Throws an IOException if the file does not exist or (a part of the files) could not be removed."
-				+ " If the file specified is not within base-dir (as specified in the preferences file), a SecurityException is thrown.";
+				+ " If the file specified is not within base-dir (as specified in the preferences file),"
+				+ " a SecurityException is thrown.";
 		}
 		
 		@Override
@@ -335,7 +386,7 @@ public class CHFileHandling {
 		@Override
 		public Mixed exec(Target t, Environment env, Mixed... args) throws ConfigRuntimeException {
 			File location = Static.GetFileFromArgument(args[0].val(), env, t, null);
-			boolean createRequiredDirs = args.length == 2 && ArgumentValidation.getBooleanish(args[1], t);
+			boolean createRequiredDirs = args.length == 2 && ArgumentValidation.getBooleanObject(args[1], t);
 			checkSecurity(location, env, t);
 			
 			// Check if the file/directory at the location exists.
@@ -346,10 +397,12 @@ public class CHFileHandling {
 			// Check if the parent directory has to be created and createRequiredDirs has not been enabled.
 			if(!location.getParentFile().exists()) {
 				if(!createRequiredDirs) {
-					throw new CRESecurityException("The directory in which the file would be creates does not exist and createRequiredDirs is not enabled: '" + location.getAbsolutePath() + "'", t);
+					throw new CRESecurityException("The directory in which the file would be creates does not exist"
+							+ " and createRequiredDirs is not enabled: '" + location.getAbsolutePath() + "'", t);
 				} else {
-					if(!location.getParentFile().mkdirs()) { // Create folders.
-						throw new CREIOException("Could not create (some) directory(ies) of: '" + location.getAbsolutePath() + "'", t);
+					if(!location.getParentFile().mkdirs()) {
+						throw new CREIOException(
+								"Could not create directory: '" + location.getParentFile().getAbsolutePath() + "'", t);
 					}
 				}
 			}
@@ -357,8 +410,9 @@ public class CHFileHandling {
 			// Perform the file creation.
 			try {
 				location.createNewFile();
-			} catch(IOException e) {
-				throw new CREIOException("Could not create file at: '" + location.getAbsolutePath() + "'", t);
+			} catch (IOException e) {
+				throw new CREIOException("Could not create file at: '"
+						+ location.getAbsolutePath() + "'. Message: "  + e.getMessage(), t);
 			}
 			
 			return CVoid.VOID;
@@ -366,12 +420,14 @@ public class CHFileHandling {
 		
 		@Override
 		public String docs() {
-			return "void {filename, [createRequiredDirs]} Creates a file at the given path."
-				+ " Will create required directory or throw a SecurityException based on the createRequiredDirs boolean."
+			return "void {path, [createRequiredDirs]} Creates a file at the given path."
+				+ " If createRequiredDirs is true, required parent directories will be created. Defaults to false."
 				+ " The path is relative to the file that is being run, not CommandHelper."
-				+ " Throws a SecurityException If createRequiredDirs is false and the given file is in an unexisting directory."
+				+ " Throws a SecurityException if createRequiredDirs is false and the parent directory of the given"
+				+ " path does not exist."
 				+ " Throws an IOException if the file or required directories could not be created."
-				+ " If the file specified is not within base-dir (as specified in the preferences file), a SecurityException is thrown.";
+				+ " If the file specified is not within base-dir (as specified in the preferences file),"
+				+ " a SecurityException is thrown.";
 		}
 		
 		@Override
@@ -397,7 +453,7 @@ public class CHFileHandling {
 		@Override
 		public Mixed exec(Target t, Environment env, Mixed... args) throws ConfigRuntimeException {
 			File location = Static.GetFileFromArgument(args[0].val(), env, t, null);
-			boolean createRequiredDirs = args.length == 2 && ArgumentValidation.getBooleanish(args[1], t);
+			boolean createRequiredDirs = args.length == 2 && ArgumentValidation.getBooleanObject(args[1], t);
 			checkSecurity(location, env, t);
 			
 			// Return if a directory at the location already exists. Throw an exception if it's a file.
@@ -405,7 +461,8 @@ public class CHFileHandling {
 				if(location.isDirectory()) {
 					return CVoid.VOID;
 				} else {
-					throw new CREIOException("Can not create a folder with the same name as a file in the same directory: '" + location + "'", t);
+					throw new CREIOException("Cannot create directory with the same name as a file"
+							+ " in the same directory: '" + location + "'", t);
 				}
 			}
 			
@@ -414,10 +471,13 @@ public class CHFileHandling {
 			if(parentFile != null) {
 				if(!parentFile.exists()) {
 					if(!createRequiredDirs) {
-						throw new CRESecurityException("The directory in which the directory would be creates does not exist and createRequiredDirs is not enabled: '" + location.getAbsolutePath() + "'", t);
+						throw new CRESecurityException("The directory in which the directory would be creates does"
+								+ " not exist and createRequiredDirs is not enabled: '"
+								+ location.getAbsolutePath() + "'", t);
 					} else {
-						if(!parentFile.mkdirs()) { // Create folders.
-							throw new CREIOException("Could not create (some) directory(ies) of: '" + location.getAbsolutePath() + "'", t);
+						if(!parentFile.mkdirs()) {
+							throw new CREIOException("Could not create (some) directory(ies) of: '"
+									+ location.getAbsolutePath() + "'", t);
 						}
 					}
 				}
@@ -425,7 +485,7 @@ public class CHFileHandling {
 			
 			// Perform the directory creation.
 			if(!location.mkdir()) {
-				throw new CREIOException("Could not create folder at: '" + location.getAbsolutePath() + "'", t);
+				throw new CREIOException("Could not create directory at: '" + location.getAbsolutePath() + "'", t);
 			}
 			
 			return CVoid.VOID;
@@ -433,12 +493,14 @@ public class CHFileHandling {
 		
 		@Override
 		public String docs() {
-			return "void {foldername, [createRequiredDirs]} Creates a directory at the given path."
-				+ " Will create required directories or throw a SecurityException based on the createRequiredDirs boolean."
-				+ " The path is relative to the file that is being run, not CommandHelper."
-				+ " Throws a SecurityException If createRequiredDirs is false and the given folder is in an unexisting directory."
-				+ " Throws an IOException if the directory or required directories could not be created."
-				+ " If the file specified is not within base-dir (as specified in the preferences file), a SecurityException is thrown.";
+			return "void {path, [createRequiredDirs]} Creates a directory at the given path."
+					+ " If createRequiredDirs is true, required parent directories will be created. Defaults to false."
+					+ " The path is relative to the file that is being run, not CommandHelper."
+					+ " Throws a SecurityException if createRequiredDirs is false and the parent directory of the given"
+					+ " path does not exist."
+					+ " Throws an IOException if the file or required directories could not be created."
+					+ " If the file specified is not within base-dir (as specified in the preferences file),"
+					+ " a SecurityException is thrown.";
 		}
 		
 		@Override
@@ -470,22 +532,25 @@ public class CHFileHandling {
 			OpenOption[] options;
 			if(writeOption == null) {
 				if(location.exists()) {
-					throw new CRESecurityException("The file already exists and no OVERWRITE option has been found: " + location.getAbsolutePath() + ".", t);
+					throw new CRESecurityException("The file already exists and no OVERWRITE option has been given: '"
+							+ location.getAbsolutePath() + "'.", t);
 				}
 				options = new OpenOption[] {StandardOpenOption.WRITE, StandardOpenOption.CREATE_NEW};
 			} else if(writeOption.equalsIgnoreCase("APPEND")) {
-				options = new OpenOption[] {StandardOpenOption.WRITE, StandardOpenOption.CREATE, StandardOpenOption.APPEND};
+				options = new OpenOption[] {
+						StandardOpenOption.WRITE, StandardOpenOption.CREATE, StandardOpenOption.APPEND};
 			} else if(writeOption.equalsIgnoreCase("OVERWRITE")) {
-				options = new OpenOption[] {StandardOpenOption.WRITE, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING};
+				options = new OpenOption[] {
+						StandardOpenOption.WRITE, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING};
 			} else {
-				throw new CREFormatException("Argument 3 has to be one of OVERWRITE or APPEND.", t);
+				throw new CREFormatException(
+						"Argument 3 of " + this.getName() + " has to be one of 'OVERWRITE' or 'APPEND'.", t);
 			}
 			location.getParentFile().mkdirs();
-			byte[] bytes = content.replaceAll("\r\n", "\n").replaceAll("\n", "\r\n").getBytes(); // Force "\r\n" newlines.
 			try {
-				Files.write(location.toPath(), bytes, options);
-			} catch (IOException ex) {
-				throw new CREIOException("Could not write to file.", t);
+				Files.write(location.toPath(), content.getBytes(), options);
+			} catch (IOException e) {
+				throw new CREIOException("Could not write to file. Message: " + e.getMessage(), t);
 			}
 			
 			return CVoid.VOID;
@@ -493,10 +558,13 @@ public class CHFileHandling {
 		
 		@Override
 		public String docs() {
-			return "void {filename, content, [option]} Writes the given content to the given file."
-				+ " The option can be one of OVERWRITE/APPEND. If whe file exists already and no option is given, a SecurityException is thrown."
-				+ " The path is relative to the file that is being run, not CommandHelper. Newlines are forced to \\r\\n"
-				+ " If the file specified is not within base-dir (as specified in the preferences file), a SecurityException is thrown."
+			return "void {path, content, [option]} Writes the given content to the file at the given path."
+				+ " The option can be one of OVERWRITE/APPEND."
+				+ " Required parent directories will be created if necessary."
+				+ " If whe file already exists and no option is given, a SecurityException is thrown."
+				+ " The path is relative to the file that is being run, not CommandHelper."
+				+ " If the file specified is not within base-dir (as specified in the preferences file),"
+				+ " a SecurityException is thrown."
 			    + " If the writing itself fails, an IOException is thrown.";
 		}
 		
@@ -512,146 +580,158 @@ public class CHFileHandling {
 		}
 	}
 	
-	@api
-	public static class chf_rename extends FileFunction {
-		
-		@Override
-		public Integer[] numArgs() {
-			return new Integer[] {2}; // TODO Add 3 once the move with overwrite works.
-		}
-		
-		@Override
-		public Mixed exec(Target t, Environment env, Mixed... args) throws ConfigRuntimeException {
-			File locationOld = Static.GetFileFromArgument(args[0].val(), env, t, null);
-			File locationNew = Static.GetFileFromArgument(args[1].val(), env, t, null);
-			boolean allowOverwrite = args.length == 3 && ArgumentValidation.getBooleanish(args[2], t);
-			checkSecurity(locationOld, env, t);
-			checkSecurity(locationNew, env, t);
-			
-			// Check if the parent directory is the same (it should be as this is a rename only).
-			if(!locationOld.getParentFile().getAbsolutePath().equals(locationNew.getParentFile().getAbsolutePath())) {
-				throw new CRESecurityException("The new filename has to be in the same directory.", t);
-			}
-			
-			// Check if the old location exists.
-			if(!locationOld.exists()) {
-				throw new CREIOException("The file to rename does not exist: " + locationOld.getAbsolutePath() + ".", t);
-			}
-			
-			// Check if the new location already exists without overwrite enabled.
-			if(locationNew.exists() && !allowOverwrite) {
-				throw new CRESecurityException("The file already exists and no OVERWRITE option has been found: " + locationNew.getAbsolutePath() + ".", t);
-			}
-			
-			// Rename the file.
-			if(!locationOld.renameTo(locationNew)) {
-				throw new CREIOException("Could not rename file: " + locationOld.getAbsolutePath() + " to " + locationNew.getAbsolutePath() + ".", t);
-			}
-			
-			return CVoid.VOID;
-		}
-		
-		@Override
-		public String docs() {
-			return "void {filename, newfilename, [overwrite]} Renames the filename to newfilename."
-				+ " If whe file already exists and overwrite is false, a SecurityException is thrown."
-				+ " The path is relative to the file that is being run, not CommandHelper."
-				+ " If the file specified is not within base-dir (as specified in the preferences file), a SecurityException is thrown."
-			    + " If the renaming itself fails, an IOException is thrown.";
-		}
-		
-		@Override
-		@SuppressWarnings("unchecked")
-		public Class<? extends CREThrowable>[] thrown() {
-			return new Class[] {CRESecurityException.class, CREIOException.class};
-		}
-		
-		@Override
-		public Version since() {
-			return MSVersion.V3_3_1;
-		}
-	}
+	// TODO - Decide what to do with this. If re-adding this, then it should be platform independent.
+//	@api
+//	public static class chf_rename extends FileFunction {
+//		
+//		@Override
+//		public Integer[] numArgs() {
+//			return new Integer[] {2}; // TODO Add 3 once the move with overwrite works.
+//		}
+//		
+//		@Override
+//		public Mixed exec(Target t, Environment env, Mixed... args) throws ConfigRuntimeException {
+//			File locationOld = Static.GetFileFromArgument(args[0].val(), env, t, null);
+//			File locationNew = Static.GetFileFromArgument(args[1].val(), env, t, null);
+//			boolean allowOverwrite = args.length == 3 && ArgumentValidation.getBooleanObject(args[2], t);
+//			checkSecurity(locationOld, env, t);
+//			checkSecurity(locationNew, env, t);
+//			
+//			// Check if the parent directory is the same (it should be as this is a rename only).
+//			if(!locationOld.getParentFile().getAbsolutePath().equals(locationNew.getParentFile().getAbsolutePath())) {
+//				throw new CRESecurityException("The new filename has to be in the same directory.", t);
+//			}
+//			
+//			// Check if the old location exists.
+//			if(!locationOld.exists()) {
+//				throw new CREIOException(
+//						"The file to rename does not exist: " + locationOld.getAbsolutePath() + ".", t);
+//			}
+//			
+//			// Check if the new location already exists without overwrite enabled.
+//			if(locationNew.exists() && !allowOverwrite) {
+//				throw new CRESecurityException("The file already exists and no OVERWRITE option has been found: "
+//						+ locationNew.getAbsolutePath() + ".", t);
+//			}
+//			
+//			// Rename the file.
+//			if(!locationOld.renameTo(locationNew)) {
+//				throw new CREIOException("Could not rename file: " + locationOld.getAbsolutePath()
+//						+ " to " + locationNew.getAbsolutePath() + ".", t);
+//			}
+//			
+//			return CVoid.VOID;
+//		}
+//		
+//		@Override
+//		public String docs() {
+//			return "void {filename, newfilename, [overwrite]} Renames the filename to newfilename."
+//				+ " If whe file already exists and overwrite is false, a SecurityException is thrown."
+//				+ " The path is relative to the file that is being run, not CommandHelper."
+//				+ " If the file specified is not within base-dir (as specified in the preferences file), a SecurityException is thrown."
+//			    + " If the renaming itself fails, an IOException is thrown.";
+//		}
+//		
+//		@Override
+//		@SuppressWarnings("unchecked")
+//		public Class<? extends CREThrowable>[] thrown() {
+//			return new Class[] {CRESecurityException.class, CREIOException.class};
+//		}
+//		
+//		@Override
+//		public Version since() {
+//			return MSVersion.V3_3_1;
+//		}
+//	}
 	
-	@api
-	public static class chf_move extends FileFunction {
-		
-		@Override
-		public Integer[] numArgs() {
-			return new Integer[] {2, 3};
-		}
-		
-		@Override
-		public Mixed exec(Target t, Environment env, Mixed... args) throws ConfigRuntimeException {
-			File locationOld = Static.GetFileFromArgument(args[0].val(), env, t, null);
-			File locationNew = Static.GetFileFromArgument(args[1].val(), env, t, null);
-			boolean allowOverwrite = args.length == 3 && ArgumentValidation.getBooleanish(args[2], t);
-			checkSecurity(locationOld, env, t);
-			checkSecurity(locationNew, env, t);
-			
-			// Check if the locations are the same (Just return if the move doesn't do anything).
-			if(locationOld.getAbsolutePath().equals(locationNew.getAbsolutePath())) {
-				return CVoid.VOID;
-			}
-			
-			// Check if the old location exists.
-			if(!locationOld.exists()) {
-				throw new CREIOException("The file to move does not exist: " + locationOld.getAbsolutePath() + ".", t);
-			}
-			
-			// Check if the new location already exists without overwrite enabled.
-			if(locationNew.exists() && !allowOverwrite) {
-				throw new CRESecurityException("The file already exists and no OVERWRITE option has been found: " + locationNew.getAbsolutePath() + ".", t);
-			}
-			
-			// Move the file.
-			try {
-				if(allowOverwrite) {
-					moveFile(locationOld, locationNew, StandardCopyOption.REPLACE_EXISTING);
-				} else {
-					moveFile(locationOld, locationNew);
-				}
-			} catch (IOException e) {
-				throw new CREIOException("Could not move one or more file(s) from: " + locationOld.getAbsolutePath()
-						+ " to " + locationNew.getAbsolutePath() + ". Reason: " + e.getMessage(), t);
-			}
-			
-			return CVoid.VOID;
-		}
-		
-		private static void moveFile(File locationOld, File locationNew, CopyOption... options) throws IOException {
-			if(locationOld.isFile()) {
-				Files.move(locationOld.toPath(), locationNew.toPath(), options);
-			} else {
-				for(File subOld : locationOld.listFiles()) {
-					File subNew = new File(locationNew.getAbsolutePath() + "/" + subOld.getName());
-					if(!subNew.mkdir()) {
-						throw new IOException("Could not create directory (does its parent exist?): " + subNew.getAbsolutePath());
-					}
-					moveFile(subOld, subNew, options);
-				}
-			}
-		}
-		
-		@Override
-		public String docs() {
-			return "void {filename, newfilename, [overwrite]} Renames the filename to newfilename."
-				+ " If whe file already exists and overwrite is false, a SecurityException is thrown."
-				+ " The path is relative to the file that is being run, not CommandHelper."
-				+ " If the file specified is not within base-dir (as specified in the preferences file), a SecurityException is thrown."
-			    + " If the renaming itself fails, an IOException is thrown.";
-		}
-		
-		@Override
-		@SuppressWarnings("unchecked")
-		public Class<? extends CREThrowable>[] thrown() {
-			return new Class[] {CRESecurityException.class, CREIOException.class};
-		}
-		
-		@Override
-		public Version since() {
-			return MSVersion.V3_3_1;
-		}
-	}
+	// TODO - Decide what to do with this. Moving directories with contents only sometimes works without copying.
+//	@api
+//	public static class chf_move extends FileFunction {
+//		
+//		@Override
+//		public Integer[] numArgs() {
+//			return new Integer[] {2, 3};
+//		}
+//		
+//		@Override
+//		public Mixed exec(Target t, Environment env, Mixed... args) throws ConfigRuntimeException {
+//			File locationOld = Static.GetFileFromArgument(args[0].val(), env, t, null);
+//			File locationNew = Static.GetFileFromArgument(args[1].val(), env, t, null);
+//			boolean allowOverwrite = args.length == 3 && ArgumentValidation.getBooleanObject(args[2], t);
+//			checkSecurity(locationOld, env, t);
+//			checkSecurity(locationNew, env, t);
+//			
+//			// Check if the locations are the same (Just return if the move doesn't do anything).
+//			if(locationOld.getAbsolutePath().equals(locationNew.getAbsolutePath())) {
+//				return CVoid.VOID;
+//			}
+//			
+//			// Check if the old location exists.
+//			if(!locationOld.exists()) {
+//				throw new CREIOException("The file to move does not exist: " + locationOld.getAbsolutePath() + ".", t);
+//			}
+//			
+//			// Check if the new location already exists without overwrite enabled.
+//			if(locationNew.exists() && !allowOverwrite) {
+//				throw new CRESecurityException("Cannot overwrite existing file (overwrite is false): "
+//						+ locationNew.getAbsolutePath() + ".", t);
+//			}
+//			
+//			// Move the file.
+//			// TODO - Test this. Directories are moved when the OS can move them without having to change the contents.
+//			try {
+//				if(allowOverwrite) {
+//					Files.move(locationOld.toPath(), locationNew.toPath(), StandardCopyOption.REPLACE_EXISTING);
+////					moveFile(locationOld, locationNew, StandardCopyOption.REPLACE_EXISTING);
+//				} else {
+//					Files.move(locationOld.toPath(), locationNew.toPath());
+////					moveFile(locationOld, locationNew);
+//				}
+//			} catch (IOException e) {
+//				throw new CREIOException("Could not move one or more file(s) from: " + locationOld.getAbsolutePath()
+//						+ " to " + locationNew.getAbsolutePath() + ". Reason: " + e.getMessage(), t);
+//			}
+//			
+//			return CVoid.VOID;
+//		}
+//		
+////		private static void moveFile(File locationOld, File locationNew, CopyOption... options) throws IOException {
+////			if(locationOld.isFile()) {
+////				Files.move(locationOld.toPath(), locationNew.toPath(), options);
+////			} else {
+////				
+////				// Move directory contents.
+////				for(File subOld : locationOld.listFiles()) {
+////					File subNew = new File(locationNew.getAbsoluteFile(), subOld.getName());
+////					if(!subNew.mkdir()) { // TODO - Check if this is the right dir to make. I think this should happen before the loop.
+////						throw new IOException("Could not create directory (does its parent exist?): " + subNew.getAbsolutePath());
+////					}
+////					moveFile(subOld, subNew, options);
+////				}
+////			}
+////		}
+//		
+//		@Override
+//		public String docs() { // TODO - Wrong docs.
+//			return "void {filename, newfilename, [overwrite]} Renames the filename to newfilename."
+//				+ " If whe file already exists and overwrite is false, a SecurityException is thrown."
+//				+ " The path is relative to the file that is being run, not CommandHelper."
+//				+ " If the file specified is not within base-dir (as specified in the preferences file),"
+//				+ " a SecurityException is thrown."
+//			    + " If the renaming itself fails, an IOException is thrown.";
+//		}
+//		
+//		@Override
+//		@SuppressWarnings("unchecked")
+//		public Class<? extends CREThrowable>[] thrown() {
+//			return new Class[] {CRESecurityException.class, CREIOException.class};
+//		}
+//		
+//		@Override
+//		public Version since() {
+//			return MSVersion.V3_3_1;
+//		}
+//	}
 	
 	/**
 	 * Checks whether the given file may be accessed according to the security manager. In cmdline mode, this is always
@@ -665,7 +745,8 @@ public class CHFileHandling {
 	public static void checkSecurity(File file, Environment env, Target t) throws CRESecurityException, CREIOException {
 		try {
 			if(!Static.InCmdLine(env, false) && !Security.CheckSecurity(file)) {
-				throw new CRESecurityException("You do not have permission to access file: '" + file.getAbsolutePath() + "'", t);
+				throw new CRESecurityException(
+						"You do not have permission to access file: '" + file.getAbsolutePath() + "'", t);
 			}
 		} catch (IOException e) {
 			throw new CREIOException(e.getMessage(), t);
