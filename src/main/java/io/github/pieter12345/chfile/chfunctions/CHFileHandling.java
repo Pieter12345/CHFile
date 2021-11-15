@@ -8,11 +8,13 @@ import com.laytonsmith.core.Security;
 import com.laytonsmith.core.Static;
 import com.laytonsmith.core.constructs.CArray;
 import com.laytonsmith.core.constructs.CBoolean;
+import com.laytonsmith.core.constructs.CByteArray;
 import com.laytonsmith.core.constructs.CString;
 import com.laytonsmith.core.constructs.CVoid;
 import com.laytonsmith.core.constructs.Target;
 import com.laytonsmith.core.environments.Environment;
 import com.laytonsmith.core.exceptions.ConfigRuntimeException;
+import com.laytonsmith.core.exceptions.CRE.CRECastException;
 import com.laytonsmith.core.exceptions.CRE.CREFormatException;
 import com.laytonsmith.core.exceptions.CRE.CREIOException;
 import com.laytonsmith.core.exceptions.CRE.CRESecurityException;
@@ -22,11 +24,14 @@ import com.laytonsmith.core.natives.interfaces.Mixed;
 import io.github.pieter12345.chfile.LifeCycle.FileFunction;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.OpenOption;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
+import java.util.zip.GZIPOutputStream;
 
 /**
  * CHFile's CHFileHandling functions class.
@@ -572,6 +577,61 @@ public class CHFileHandling {
 		@SuppressWarnings("unchecked")
 		public Class<? extends CREThrowable>[] thrown() {
 			return new Class[] {CRESecurityException.class, CREIOException.class, CREFormatException.class};
+		}
+		
+		@Override
+		public Version since() {
+			return MSVersion.V3_3_1;
+		}
+	}
+	
+	@api
+	public static class chf_write_gzip_binary extends FileFunction {
+		
+		@Override
+		public Integer[] numArgs() {
+			return new Integer[] {2, 3};
+		}
+		
+		@Override
+		public Mixed exec(Target t, Environment env, Mixed... args) throws ConfigRuntimeException {
+			File location = Static.GetFileFromArgument(args[0].val(), env, t, null);
+			CByteArray content = ArgumentValidation.getByteArray(args[1], t);
+			boolean overwrite = args.length >= 3 && ArgumentValidation.getBooleanish(args[2], t);
+			checkSecurity(location, env, t);
+			if(!overwrite && location.exists()) {
+				throw new CRESecurityException("The file already exists and the overwrite option is false: '"
+						+ location.getAbsolutePath() + "'.", t);
+			}
+			location.getParentFile().mkdirs();
+			try(OutputStream outStream = new GZIPOutputStream(new FileOutputStream(location))) {
+				outStream.write(content.asByteArrayCopy());
+			} catch (IOException e) {
+				throw new CREIOException("Could not write to file. Message: " + e.getMessage(), t);
+			}
+			
+			return CVoid.VOID;
+		}
+		
+		@Override
+		public String docs() {
+			return "void {path, content, [overwrite]}"
+					+ " Gzips and writes the given byte array to the file at the given path."
+					+ " Required parent directories will be created if necessary."
+					+ " If the file already exists and overwrite is false, a SecurityException is thrown."
+					+ " Overwrite defaults to false."
+					+ " The path is relative to the file that is being run, not CommandHelper."
+					+ " If the content is not a byte_array, a CastException is thrown."
+					+ " If the file specified is not within base-dir (as specified in the preferences file),"
+					+ " a SecurityException is thrown."
+				    + " If the writing itself fails, an IOException is thrown.";
+		}
+		
+		@Override
+		@SuppressWarnings("unchecked")
+		public Class<? extends CREThrowable>[] thrown() {
+			return new Class[] {
+					CRECastException.class, CRESecurityException.class, CREIOException.class, CREFormatException.class};
 		}
 		
 		@Override
