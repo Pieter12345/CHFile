@@ -566,7 +566,7 @@ public class CHFileHandling {
 			return "void {path, content, [option]} Writes the given content to the file at the given path."
 				+ " The option can be one of OVERWRITE/APPEND."
 				+ " Required parent directories will be created if necessary."
-				+ " If whe file already exists and no option is given, a SecurityException is thrown."
+				+ " If the file already exists and no option is given, a SecurityException is thrown."
 				+ " The path is relative to the file that is being run, not CommandHelper."
 				+ " If the file specified is not within base-dir (as specified in the preferences file),"
 				+ " a SecurityException is thrown."
@@ -686,7 +686,7 @@ public class CHFileHandling {
 //		@Override
 //		public String docs() {
 //			return "void {filename, newfilename, [overwrite]} Renames the filename to newfilename."
-//				+ " If whe file already exists and overwrite is false, a SecurityException is thrown."
+//				+ " If the file already exists and overwrite is false, a SecurityException is thrown."
 //				+ " The path is relative to the file that is being run, not CommandHelper."
 //				+ " If the file specified is not within base-dir (as specified in the preferences file), a SecurityException is thrown."
 //			    + " If the renaming itself fails, an IOException is thrown.";
@@ -774,7 +774,7 @@ public class CHFileHandling {
 //		@Override
 //		public String docs() { // TODO - Wrong docs.
 //			return "void {filename, newfilename, [overwrite]} Renames the filename to newfilename."
-//				+ " If whe file already exists and overwrite is false, a SecurityException is thrown."
+//				+ " If the file already exists and overwrite is false, a SecurityException is thrown."
 //				+ " The path is relative to the file that is being run, not CommandHelper."
 //				+ " If the file specified is not within base-dir (as specified in the preferences file),"
 //				+ " a SecurityException is thrown."
