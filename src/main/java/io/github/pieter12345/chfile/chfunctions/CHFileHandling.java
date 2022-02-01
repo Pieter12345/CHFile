@@ -403,7 +403,7 @@ public class CHFileHandling {
 			// Check if the parent directory has to be created and createRequiredDirs has not been enabled.
 			if(!location.getParentFile().exists()) {
 				if(!createRequiredDirs) {
-					throw new CRESecurityException("The directory in which the file would be creates does not exist"
+					throw new CRESecurityException("The directory in which the file would be created does not exist"
 							+ " and createRequiredDirs is not enabled: '" + location.getAbsolutePath() + "'", t);
 				} else {
 					if(!location.getParentFile().mkdirs()) {
@@ -477,7 +477,7 @@ public class CHFileHandling {
 			if(parentFile != null) {
 				if(!parentFile.exists()) {
 					if(!createRequiredDirs) {
-						throw new CRESecurityException("The directory in which the directory would be creates does"
+						throw new CRESecurityException("The directory in which the directory would be created does"
 								+ " not exist and createRequiredDirs is not enabled: '"
 								+ location.getAbsolutePath() + "'", t);
 					} else {
